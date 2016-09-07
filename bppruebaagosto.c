@@ -8,14 +8,14 @@
 #define deltaY 0.001
 #define deltaL 0.0005
 #define deltaP 0.0001
-#define NumPix 1000 /*Calcular numpix y numang automaticamente ¿?¿?*/
+#define NumPix 100 /*Calcular numpix y numang automaticamente ¿?¿?*/
 /*#define RANDINPUT*/
 #define anchura_malla 1
 #define INPUT_ARCHIVO
 
 #define PI 3.141592653
 
-
+/*Cambio de signo en la subrutina my_pixel !!!!!  */
 
 double *import_data(double *datain);
 int *crea_matriz(int dx, int dy);
@@ -36,7 +36,7 @@ double  yp, yl, division,  f, betarand, betamin, betamax, ang, beta;
 
 double pos0rnd[2], pos1rnd[2];
 
-NumAng=20; /*NumAng =argv[1]*/
+NumAng =atoi(argv[1]);
 FILE *finp, *fout;
 ang=2*PI/NumAng;
 dimx=(int)anchura_malla/deltaX;
@@ -103,7 +103,7 @@ yp=i*deltaP-deltaP/2;
 division=yp/deltaL;
 division=(int)division;
 yl=division*deltaL+deltaL/2;
-d=f=0.001;
+d=f=0.0001;
 betamin=(yp-yl-0.5*deltaP)/f;
 betamax=(yp-yl+0.5*deltaP)/f;
 
@@ -130,9 +130,10 @@ if(numpixx2!=*numpix && numpixy2!=*(numpix+1)) /*Este if probablemente sobre per
 {
 /*Matriz_res= ¿?¿?¿? */
 printf("El pixel es %d, %d,y el ang %lf\n", *numpix, *(numpix+1), beta);
-*(matriz_resul+(*numpix*dimx)+*(numpix+1))=*(matriz_resul+(*numpix*dimx)+*(numpix+1))+1;
+*(matriz_resul+(*numpix)*dimx+*(numpix+1))=*(matriz_resul+(*numpix)*dimx+*(numpix+1))+1;
 numpixx2=*numpix;
 numpixy2=*(numpix+1);
+
 }
 }
 }
@@ -245,10 +246,10 @@ int *my_pixel(int dix, int diy, int j, double deltaPas, double deltX, double del
 int *pix=malloc(2*sizeof(int));
 int *pix2=malloc(2*sizeof(int));
 
-		*pix=rint((j*deltaPas-anchura_mall/2)/deltX);
+		*pix=rint((j*deltaPas-anchura_mall/2)/deltX); 
 		*(pix+1)=rint(((*pos-anchura_mall/2)/deltY));
-		*pix2=*pix*cos(bet)+*(pix+1)*sin(bet);
-		*(pix2+1)=*(pix+1)*cos(bet)-*(pix)*sin(bet);
+		*pix2=*pix*cos(bet)-*(pix+1)*sin(bet);
+		*(pix2+1)=*(pix+1)*cos(bet)+*(pix)*sin(bet);
 *pix=*pix2+factodim/2*dix;
 *(pix+1)=*(pix2+1)+factodim/2*diy;
 
