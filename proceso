@@ -1,0 +1,4 @@
+gcc f.c -lm -g -o f
+./f
+gcc bv2.c -lm -g -o b
+./b
