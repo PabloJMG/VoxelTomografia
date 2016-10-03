@@ -1,4 +1,4 @@
-gcc f.c -lm -g -o f
+gcc pf3.c -lm -lpthread -g -o f
 ./f
 gcc bv2.c -lm -g -o b
 ./b

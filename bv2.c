@@ -96,7 +96,6 @@ for(i=0; i<Num_Pix; i++) /*Carga los datos de cada angulo de adq en datainp*/
 {
 
 fscanf(finp, "%lu", &datainp[i]);
-printf("%lu\n", datainp[i]);
 
 }
 
@@ -187,8 +186,12 @@ FILE *pipeplot=popen("gnuplot -persist", "w");
 /*fprintf(pipeplot, "set title /lo que sea/"   */
 fprintf(pipeplot, "set pm3d map\n");
 fprintf(pipeplot, "splot '/home/pablo/Resultados_C/FP_BP/Resultados_BP.txt' matrix\n");
-fflush(pipeplot);
 sleep(5);
+fprintf(pipeplot, "set term png\n");
+fprintf(pipeplot, "set output 'BP_Imagen.png'\n");
+fprintf(pipeplot, "replot\n");
+
+fflush(pipeplot);
 fprintf(pipeplot, "quit\n");
 pclose(pipeplot);
 //~ printf("conta=%d\n", conta);
