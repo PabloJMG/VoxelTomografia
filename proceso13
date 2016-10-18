@@ -1,0 +1,5 @@
+find /home/pablo/Resultados_C/FP_BP_Octubre -type -f -name "angulo_*" -exec rm -f {}\;
+gcc pf33.c -lm -lpthread -g -o pf33
+./pf33
+gcc bv22.c crea_imagen.c -lm -g -o bv22
+./bv22
