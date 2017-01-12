@@ -24,6 +24,12 @@ double deltaPaso;
 double deltaX;
 double deltaY;
 int factordim;
+double mlenwid; /*Tamaño de la lente principal*/
+int mlendiv; /*Num. de divisiones de la lente principal*/
+int nulen; /*Num de lentillas*/
+double ff; /*distancia lenslet-detector*/
+double fociii; 
+double dist;
 double anchura;
 double angmax;
 double *obj;
@@ -40,7 +46,8 @@ void trataobj(FILE *fui, int fac, int dix, int diy, int deltax, int deltay); /*E
 //~ double *crea_matriz(int dx, int dy, int dex, int dey);
  int *crea_array_ent(int dil);
 void guarda_resultados(int *arra, int nmpix,  FILE *fiiii);
-FILE *apertura_archivo(int con);
+void guarda_resul(double** array, int NumRayos, FILE *finp, double dist1, double dist2);
+FILE *apertura_archivo(void);
 void *propagacion(void *threadarg);
 double *calcula_mu(int longi, double *coef, FILE *finp);
 int *my_pixel(int dix, int diy, int j, double deltaPas, double deltX, double deltY, int factodim, double anchura_mall, double *pos, double bet);
@@ -52,21 +59,22 @@ int *my_pixel(int dix, int diy, int j, double deltaPas, double deltX, double del
 #define dimy anchura_malla/deltaY*/
 #define PI 3.141592653
 #define INPUT_TXT
-#define DEB_ANG
+#define RAND_ANG
 #define SQUARE
 #define DOSPI/*La otra opcion es abanico*/
 int main(int argc, char **argv)
 {
-int i, cont, dimx, dimy, factordim, NumAdq,rc, dimtotal, a, b, nth;
-int array_inp[4];
-double array_inp2[6];
-double  d, deltaX, deltaY, anchura_malla, deltaang, beta,  angmax, radio, deltax, deltay;
+int i, cont, dimx, dimy, factordim, NumAdq,rc, dimtotal, a, b, nth, factorlente;
+int array_inp[14];
+double array_inp2[16];
+double  d, deltaX, deltaY, anchura_malla, deltaang, beta,  angmax, radio, deltax, deltay; /* focii = distancia + anchura_malla/2 ¿? */
 //~ pthread_t threads[NTHREADS];
 //~ int thread_arg[NTHREADS];
 clock_t comienzo, fin;
 FILE  *fu1, *finp;
 double factorcon=PI/180;
 nth=0;
+factorlente=10;  /*Numero de detectores por cada minilente*/
 
 #ifdef ABANICO /*Solo se proyecta en un abanico de angulos*/
 
@@ -86,20 +94,26 @@ fclose(finp);
 
 
 #ifdef INPUT_TXT /*Error aqui */
-		fu1=fopen("inputint.txt", "r");
+		fu1=fopen("inputint2.txt", "r");
 		fscanf(fu1, "%d", &array_inp[0]); /*NumAdq*/
 		fscanf(fu1, "%d", &array_inp[1]); /*N*/
 		fscanf(fu1, "%d", &array_inp[2]); /*NumPix*/
 		fscanf(fu1, "%d", &array_inp[3]); /*factordim*/
+		fscanf(fu1, "%d", &array_inp[4]); /* divisiones de la main lens*/
+		fscanf(fu1, "%d", &array_inp[5]); /*num lens*/
 		fclose(fu1);
 
-		fu1=fopen("inputdou.txt", "r");
+		fu1=fopen("inputdou2.txt", "r");
 		fscanf(fu1, "%lf", &array_inp2[0]); /*Anchura*/
 		fscanf(fu1, "%lf", &array_inp2[1]); /*deltaX*/
 		fscanf(fu1, "%lf", &array_inp2[2]); /*deltaY*/
 		fscanf(fu1, "%lf", &array_inp2[3]); /*deltadis*/
 		fscanf(fu1, "%lf", &array_inp2[4]); /*d*/
 		fscanf(fu1, "%lf", &array_inp2[5]); /*deltapaso*/
+		fscanf(fu1, "%lf", &array_inp2[6]); /* Anchura de lente principal*/
+		fscanf(fu1, "%lf", &array_inp2[7]); /*f*/
+		fscanf(fu1, "%lf", &array_inp2[8]); /*focii*/
+		//~ fscanf(fu1, "%lf", &array_inp2[9]); /*distancia*/
 		fclose(fu1);
 
 //~ printf("Input enteros:\n");
@@ -134,7 +148,7 @@ deltaang=2*PI/NumAdq;
 anchura_malla=1; /*En unidades de medida, anchura del objeto*/
 
 srand(time(NULL));
-angmax=anchura_malla/(2*(anchura_malla+d)); 
+//~ angmax=; 
 
 	for(i=0; i<NumAdq; i++){
 			#ifdef INPUT_TXT
@@ -146,10 +160,16 @@ angmax=anchura_malla/(2*(anchura_malla+d));
 			par[i].deltadis=array_inp2[3];
 			par[i].d=array_inp2[4];
 			par[i].factordim=array_inp[3];
+			par[i].mlendiv=array_inp[4];
+			par[i].nulen=array_inp[5];
 			par[i].deltaPaso=array_inp2[5];
+			par[i].mlenwid=array_inp2[6];
+			par[i].ff=array_inp2[7];
+			par[i].fociii=array_inp2[8];
+			//~ par[i].dist=array_inp2[9];
 			#endif
 		
-			#ifdef ARGS
+			#ifdef ARGS /*  Faltarán parte de los argumentos */
 			par[i].N=atoi(argv[2]);
 			par[i].NumPix=atoi(argv[3]);
 			par[i].anchura=(argv[4]);
@@ -165,8 +185,8 @@ angmax=anchura_malla/(2*(anchura_malla+d));
 		par[i].dix = (int) par[i].anchura/par[i].deltaX;
 		par[i].diy= (int) par[i].anchura/par[i].deltaY;
 
-		par[i].angmax=par[i].anchura/(2*(par[i].anchura + par[i].d));
-	
+		par[i].angmax=par[i].mlenwid/(2*(par[i].anchura + par[i].d));
+		par[i].dist=par[i].anchura/2+par[i].fociii;	
 }
 	
 	double *objeto=malloc(par[0].factordim*par[0].dix*par[0].factordim*par[0].diy*sizeof(*objeto));
@@ -189,7 +209,7 @@ radio=deltay/2;
 									*(objeto+a*par[0].factordim*par[0].diy+b)=0.02;
 											if(a < par[0].factordim*par[0].dix/2 + deltax && a > par[0].factordim*par[0].dix/2 -deltax && 
 											b < par[0].factordim*par[0].diy/2 +deltay && b > par[0].factordim*par[0].dix/2 - deltay) /*Aqui parentesis en las condiciones ¿? */
-												*(objeto+a*par[0].factordim*par[0].diy+b)=50;
+												*(objeto+a*par[0].factordim*par[0].diy+b)=5;
 														//~ printf("Flor");
 														//~ getchar();}
 									fprintf(finp, "%lf  ", *(objeto+a*par[0].factordim*par[0].diy+b));
@@ -437,6 +457,27 @@ fprintf(finp, "%d\n",  res);
 
 }
 
+void guarda_resul(double** array, int NumRayos, FILE  *finp, double dist1, double dist2)
+{
+	
+	int cont, cont2;
+	double corx;
+	corx = dist1;
+
+	for(cont=0; cont<2; cont++)
+	{
+		for(cont2=0; cont2<NumRayos; cont2++)
+		{
+			fprintf(finp, "%lf %lf", corx, array[cont2][cont]);
+				fprintf(finp, "\n");
+		}
+	
+		corx=dist2;
+	}
+	
+	
+}
+
 int *my_pixel(int dix, int diy, int j, double deltaPas, double deltX, double deltY, int factodim, double anchura_mall, double *pos, double bet)
 {
 //~ int *pix=malloc(2*sizeof(int));
@@ -449,36 +490,36 @@ int pix2[2];
 		*(pix+1)=rint(((*pos-anchura_mall*factodim/2)/deltY));
 		*pix2=*pix*cos(bet)+*(pix+1)*sin(bet);
 		*(pix2+1)=*(pix+1)*cos(bet)-*(pix)*sin(bet);
-*pix=*pix2+factodim/2*dix;
-*(pix+1)=*(pix2+1)+factodim/2*diy;
+		*pix=*pix2+factodim/2*dix;
+		*(pix+1)=*(pix2+1)+factodim/2*diy;
 
 return pix;
 }
 
 
-FILE *apertura_archivo(int contador)
+FILE *apertura_archivo(void)
 {
 
-char nombrearchivo[25]="Resultados_pixeles.txt";
-#ifdef DOSPI
-sprintf(nombrearchivo, "angulo_%d.txt", contador);
-#endif
+char nombrearchivo[25]="FPwML.txt";
+//~ #ifdef DOSPI
+//~ sprintf(nombrearchivo, "angulo_%d.txt", contador);
+//~ #endif
 
-#ifdef ABANICO
-sprintf(nombrearchivo, "angulo_bundle%d.txt", contador);
-#endif
-printf("Se ha abierto el archivo %d\n", contador);
+//~ #ifdef ABANICO
+//~ sprintf(nombrearchivo, "angulo_bundle%d.txt", contador);
+//~ #endif
+//~ printf("Se ha abierto el archivo %d\n", contador);
 
 //~ printf("Direccion de memoria del archivo %d nomás abierto=%p", contador, fopen(nombrearchivo,"w"));
 
 
-if(fopen(nombrearchivo, "w") == 0x000000);
-{
-	printf("Error en %d", contador);
+//~ if(fopen(nombrearchivo, "w") == 0x000000);
+//~ {
+	//~ printf("Error en %d", contador);
 	
 
 	
-}
+//~ }
 return fopen(nombrearchivo, "w");
 
 
@@ -506,16 +547,22 @@ return mul;
 
 }
 
-void *propagacion(void *threadarg) /*Falta lo del objeto*/
+void *propagacion(void *threadarg) /*Falta lo del objeto --- Pasar por el struct los parametros de la main lens y de las lenslet*/
 {
-	double num_rand, betarnd, deltadis, deltaP, Niter,  mu, cosang, sinang;
+	double num_rand, betarnd, deltadis, deltaP, Niter,  mu, cosang, sinang, f , focii, mlenswidth, distancia;
 	double pos0[2], pos1[2];
-	int i, j, pixx, pixy, num_pix, NRayos, cont, deltaang, pi1, pi2, pami;
+	int i, j, pixx, pixy, num_pix, NRayos, cont, cont2, deltaang, pi1, pi2, pami, pixu, numlens, mlensdiv, ind;
 	int *pix=malloc(2*sizeof(int));
 	int *pix2=malloc(2*sizeof(int));
 	struct param *mispar;
 	mispar=(struct param *) threadarg;
 	cont = mispar -> contador;
+	numlens = mispar -> nulen;
+	mlensdiv= mispar -> mlendiv;
+	mlenswidth= mispar -> mlenwid;
+	f = mispar -> ff;
+	focii = mispar -> fociii;
+	distancia = mispar -> dist;
 	double *objet = mispar -> obj;
 	int NumPi = mispar->NumPix;
 	double anchura = mispar->anchura;
@@ -529,6 +576,7 @@ void *propagacion(void *threadarg) /*Falta lo del objeto*/
 	double bet = mispar -> beta;
 	 int *resultados=malloc(NumPi*sizeof(int)); /*Error de memoria aquí*/
 	resultados=crea_array_ent(NumPi);
+	
 	//~ printf("Delta Y = %lf, deltaX = %lf, beta = %lf, dimx=%d", deltX, deltY, bet, dix);
 
 	//~ int *resultados = malloc(NumPi*sizeof(unsigned long int));
@@ -542,13 +590,24 @@ void *propagacion(void *threadarg) /*Falta lo del objeto*/
 srand(time(NULL));
 
 Niter=(int)(dix*deltX/deltaPas);
-double deltadi = mispar -> deltadis;
+	double deltadi = mispar -> deltadis;
 	double delta = mispar -> d;	
-fout=fopen("Rayos.txt", "w+");
-printf("Contador = %d\n", cont);
-cosang=cos(bet);
-sinang=sin(bet);
-pami=0;
+	fout=fopen("Rayos.txt", "w+");
+	printf("Contador = %d\n", cont);
+	cosang=cos(bet);
+	sinang=sin(bet);
+	pami=0;
+	double resul[NRayos][2]; /*Inicializarlo a -1 ¿?*/
+
+			for(cont=0; cont<2; cont++)
+			{
+				for(cont2=0; cont2<NRayos; cont2++)
+				{
+				resul[cont2][cont]=-1;
+				}
+			}
+			ind=0;
+			
 for(i=0; i<NRayos; i++) /*Iteracion de todos los rayos para un mismo angulo*/
 {
 
@@ -583,71 +642,89 @@ fprintf(fout, "%f %f %f %d %d\n", pos0[0], pos0[1],betarnd, i, 0);
 
 		{
 
-	*(pos1)=*(pos0+1)*deltaPas+*pos0;
-	*(pos0)=*(pos1);
-	//~ pix=my_pixel(dix, diy, j, deltaPas, deltX, deltY, factor, anchura, pos0, bet); /*aquí se calcula un numero de pix coherente para distintos ángulos de adquisicion*/
+		*(pos1)=*(pos0+1)*deltaPas+*pos0;
+		*(pos0)=*(pos1);
+										//~ pix=my_pixel(dix, diy, j, deltaPas, deltX, deltY, factor, anchura, pos0, bet); /*aquí se calcula un numero de pix coherente para distintos ángulos de adquisicion*/
 
-			*pix=rint(dix/2-j*deltaPas/deltX-1);
+		*pix=rint(dix/2-j*deltaPas/deltX-1);
 		*(pix+1)=rint(((*pos0-anchura*factor/2)/deltY));
 		*pix2=*pix*cosang+*(pix+1)*sinang;
 		*(pix2+1)=*(pix+1)*cosang-*(pix)*sinang;
-*pix=*pix2+factor/2*dix;
-*(pix+1)=*(pix2+1)+factor/2*diy;
+		*pix=*pix2+factor/2*dix;
+		*(pix+1)=*(pix2+1)+factor/2*diy;
 	
-    /*fseek(fu1, (pixx*dimy*factordim+pixy)*sizeof(double), SEEK_SET);  he quitado esto (pixx*dimy*factordim+pixy)*
-	fscanf(fu1, "%lf", &mu);	Atenuacion lineal
-	rewind(fu1);*/
+								    /*fseek(fu1, (pixx*dimy*factordim+pixy)*sizeof(double), SEEK_SET);  he quitado esto (pixx*dimy*factordim+pixy)*
+									fscanf(fu1, "%lf", &mu);	Atenuacion lineal
+									rewind(fu1);*/
 	
-	pi1=*pix;
-pi2=*(pix +1);
-	mu=*(objet + pi1*diy*factor+pi2);
-if(pixx != *(pix) || pixy != *(pix+1)) /*Esto es un OR */
-			{
-	pixx=*(pix);
-	pixy=*(pix+1);
-	//~ calcula_mu((pixx*diy*factor+pixy), &mu, fui); /*Very time-consuming*/
-	num_rand=rand()/((double)RAND_MAX +1);
-
-
-		if(num_rand > exp(-mu*deltX)) 
-				{	
-					//~ printf("Rayo no llego en angulo %d para mu =%lf\n", cont, mu);
-				pami+=1;
+		pi1=*pix;
+		pi2=*(pix +1);
+		mu=*(objet + pi1*diy*factor+pi2);
+		
+					if(pixx != *(pix) || pixy != *(pix+1)) /*Esto es un OR */
+								{
+									pixx=*(pix);
+									pixy=*(pix+1);
+									//~ calcula_mu((pixx*diy*factor+pixy), &mu, fui); /*Very time-consuming*/
+									num_rand=rand()/((double)RAND_MAX +1);
+											
+													if(num_rand > exp(-mu*deltX)) 
+															{//~ printf("Rayo no llego en angulo %d para mu =%lf\n", cont, mu);
+																pami+=1;
+																break;
+															}
+					
+								}
 				
-					break;
-				}
+					//~ if(j== (Niter-1))
+						//~ {
+						    //~ num_pix=rint((*pos0-factor*anchura/2+anchura/2)/deltaP); /*Num de detector al que llega el rayo*/							
+							//~ printf("El número de píxel es %d y pos del rayo es %lf, mu =%lf y angulo %d, mientras, no han llegado %d rayos\n", num_pix, *pos0-factor*anchura/2+anchura/2, mu, cont, pami);
+							//~ pami=0;
+													//~ if(num_pix >= 0 && num_pix < NumPi)
+															//~ *(resultados+num_pix)=*(resultados+num_pix)+1;
+					
+						//~ }
+				
 
-			}
+} /*Final de la interacción de los X-Ray a través del objeto*/
 
-if(j== (Niter-1))
-	{
-	num_pix=rint((*pos0-factor*anchura/2+anchura/2)/deltaP); /*Num de detector al que llega el rayo*/
+/*Poner aquí el if(j==(Niter-!)) --- probablemente*/
+/* Propagation through main lens  */
+/*Realizar una traslación para la pos0*/
+if(j==(Niter-1))
+{printf("Llego al if y pami = %d, numero de rayo %d\n", pami, i);
+*pos0=*pos0 + (1-factor)*anchura/2; /*Traslacion--- revisar*/
 
-printf("El número de píxel es %d y pos del rayo es %lf, mu =%lf y angulo %d, mientras, no han llegado %d rayos\n", num_pix, *pos0-factor*anchura/2+anchura/2, mu, cont, pami);
-pami=0;
-if(num_pix >= 0 && num_pix < NumPi)
-			{
-				*(resultados+num_pix)=*(resultados+num_pix)+1;
-
-			}
-
-	
+*pos1=*pos0+*(pos0+1)*distancia;
+*(pos1+1)=-*(pos0 +1);
+*pos0=*pos1;
+*(pos0+1)=*(pos1+1);
 
 
-		}
 
+pixu=rint(*pos0/mlenswidth*mlensdiv);/* Calcular aquí en qué punto de la lente corta*/
+*pos1=*pos0+(*pos0+1)*focii; /*Propagación hasta la minilente*/
+*pos0=*pos1;
+resul[ind][0]=pixu*mlenswidth/mlensdiv;
+pixu=rint(*pos0/mlenswidth*numlens);/*Calcular aqui la lente a la que llega */
 
+*pos0=pixu*mlenswidth/numlens;/*igualar la pos0 a la posicion central de la lentilla*/
+
+*pos1=*pos0 + *(pos0+1)*f;
+
+pixu=rint(*pos1/deltaP);/*Calcular pixel al que llega con pos1*/
+resul[ind][1]=pixu*deltaP; /* Guardarlo no como num de pixel sino como  coordenada y*/
+	pami=0;
+	ind+=1;
 }
-
-
-	
 }
 fclose(fui);
 fclose(fout);
 
-	 fui=apertura_archivo(cont); /*Crea un archivo para cada ángulo*/
+	 fui=apertura_archivo(); /*Crea un archivo para cada ángulo*/
 
-	guarda_resultados(resultados, NumPi, fui); /*Guarda los rayos detectados por cada pixel*/
+	guarda_resul(resul, NRayos, fui, (distancia + anchura),  (distancia + anchura + focii + f)); /*Guarda los rayos detectados por cada pixel*/
 	fclose(fui);
 	free(resultados);
 	
