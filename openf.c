@@ -43,6 +43,7 @@ void guarda_resultados(int *arra, int nmpix,  FILE *fiiii);
 FILE *apertura_archivo(int con);
 void *propagacion(void *threadarg);
 double *calcula_mu(int longi, double *coef, FILE *finp);
+void saltar_com(FILE *fin);
 int *my_pixel(int dix, int diy, int j, double deltaPas, double deltX, double deltY, int factodim, double anchura_mall, double *pos, double bet);
 /*double *matrixmul(double aaa, double bbb);*/
 /*#define anchura_malla 1
@@ -86,39 +87,60 @@ fclose(finp);
 
 
 #ifdef INPUT_TXT /*Error aqui */
-		fu1=fopen("inputint.txt", "r");
+		fu1=fopen("input/inputint.txt", "r");
+		saltar_com(fu1);
 		fscanf(fu1, "%d", &array_inp[0]); /*NumAdq*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fscanf(fu1, "%d", &array_inp[1]); /*N*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fscanf(fu1, "%d", &array_inp[2]); /*NumPix*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fscanf(fu1, "%d", &array_inp[3]); /*factordim*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fclose(fu1);
 
-		fu1=fopen("inputdou.txt", "r");
+		fu1=fopen("input/inputdou.txt", "r");
+		saltar_com(fu1);
 		fscanf(fu1, "%lf", &array_inp2[0]); /*Anchura*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fscanf(fu1, "%lf", &array_inp2[1]); /*deltaX*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fscanf(fu1, "%lf", &array_inp2[2]); /*deltaY*/
+			saltar_com(fu1);
+				saltar_com(fu1);
+			
 		fscanf(fu1, "%lf", &array_inp2[3]); /*deltadis*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fscanf(fu1, "%lf", &array_inp2[4]); /*d*/
+			saltar_com(fu1);
+				saltar_com(fu1);
 		fscanf(fu1, "%lf", &array_inp2[5]); /*deltapaso*/
 		fclose(fu1);
 
-//~ printf("Input enteros:\n");
-		//~ for (cont=0; cont< 4; cont++)
-		//~ {
+printf("Input enteros:\n");
+		for (cont=0; cont< 4; cont++)
+		{
 			
-			//~ printf("array_input[%d]=%d\n",cont, array_inp[cont]);
-		//~ }
+			printf("array_input[%d]=%d\n",cont, array_inp[cont]);
+		}
 	
-//~ getchar();
 
-//~ printf("Input dobles:\n");
-//~ for (cont=0; cont< 6; cont++)
-//~ {
+
+printf("Input dobles:\n");
+for (cont=0; cont< 6; cont++)
+{
 	
-	//~ printf("array_input2[%d]=%lf\n",cont, array_inp2[cont]);
-//~ }
+	printf("array_input2[%d]=%lf\n",cont, array_inp2[cont]);
+}
 
-//~ NumAdq= array_inp[0];
+NumAdq= array_inp[0];
 
 #endif
 
@@ -172,15 +194,15 @@ angmax=anchura_malla/(2*(anchura_malla+d));
 	double *objeto=malloc(par[0].factordim*par[0].dix*par[0].factordim*par[0].diy*sizeof(*objeto));
 	pthread_t threads[NumAdq];
 	
-	deltax=par[0].factordim*par[0].dix/15;
+	deltax=par[0].factordim*par[0].dix/20;
 
-deltay=par[0].factordim*par[0].diy/15;
+deltay=par[0].factordim*par[0].diy/20;
 
 radio=deltay/2;
 
 
 				#ifdef SQUARE
-			finp=fopen("matriz_objeto.txt", "w");
+			finp=fopen("res/matriz_objeto.txt", "w");
 		//~ objeto=trataobj(fu1, par[0].factordim,  par[0].dix, par[0].diy, par[0].factordim*par[0].dix/20, par[0].factordim*par[0].diy/20);
 					for(a=0; a<(par[0].factordim*par[0].dix); a++)
 					{
@@ -189,7 +211,7 @@ radio=deltay/2;
 									*(objeto+a*par[0].factordim*par[0].diy+b)=0.02;
 											if(a < par[0].factordim*par[0].dix/2 + deltax && a > par[0].factordim*par[0].dix/2 -deltax && 
 											b < par[0].factordim*par[0].diy/2 +deltay && b > par[0].factordim*par[0].dix/2 - deltay) /*Aqui parentesis en las condiciones ¿? */
-												*(objeto+a*par[0].factordim*par[0].diy+b)=50;
+												*(objeto+a*par[0].factordim*par[0].diy+b)=5;
 														//~ printf("Flor");
 														//~ getchar();}
 									fprintf(finp, "%lf  ", *(objeto+a*par[0].factordim*par[0].diy+b));
@@ -234,7 +256,7 @@ radio=deltay/2;
 	#endif
 	
 	#ifdef CIRCLE_IN_SQUARE
-			finp=fopen("matriz_objeto.txt", "w");
+			finp=fopen("res/matriz_objeto.txt", "w");
 		for(a=0; a<(par[0].factordim*par[0].dix); a++)
 			{
 					for(b=0; b<(par[0].factordim*par[0].diy); b++)
@@ -242,10 +264,10 @@ radio=deltay/2;
 							*(objeto+a*par[0].factordim*par[0].diy+b)=0.02;
 							
 								if(a < par[0].factordim*par[0].dix/2 + deltax && a > par[0].factordim*par[0].dix/2 -deltax && b < par[0].factordim*par[0].diy/2 +deltay && b > par[0].factordim*par[0].dix/2 - deltay) /*El objeto aquí está mal definido */
-								*(objeto+a*par[0].factordim*par[0].diy+b)=1;
+								*(objeto+a*par[0].factordim*par[0].diy+b)=10;
 								
 								if(((a-par[0].factordim*par[0].dix/2)* (a-par[0].factordim*par[0].dix/2) + (b - par[0].factordim*par[0].diy/2)*(b - par[0].factordim*par[0].diy/2)) < (radio*radio))
-								*(objeto + a*par[0].factordim*par[0].diy + b)=5;
+								*(objeto + a*par[0].factordim*par[0].diy + b)=50;
 								
 								fprintf(finp, "%lf  ", *(objeto+a*par[0].factordim*par[0].diy+b));
 					    }
@@ -270,7 +292,7 @@ for(i=0; i<NumAdq; i++)
 omp_set_num_threads(NumAdq);
 
 printf("Numero maximo de threads =%d y NumAng =%d\n",  omp_get_num_threads(), NumAdq);
-getchar();
+//~ getchar();
 #pragma omp parallel  
 {
 	#pragma omp for private(cont)
@@ -459,13 +481,13 @@ return pix;
 FILE *apertura_archivo(int contador)
 {
 
-char nombrearchivo[25]="Resultados_pixeles.txt";
+char nombrearchivo[50]="res/Resultados_pixeles.txt";
 #ifdef DOSPI
-sprintf(nombrearchivo, "angulo_%d.txt", contador);
+sprintf(nombrearchivo, "res/angulo_%d.txt", contador);
 #endif
 
 #ifdef ABANICO
-sprintf(nombrearchivo, "angulo_bundle%d.txt", contador);
+sprintf(nombrearchivo, "res/angulo_bundle%d.txt", contador);
 #endif
 printf("Se ha abierto el archivo %d\n", contador);
 
@@ -535,7 +557,7 @@ void *propagacion(void *threadarg) /*Falta lo del objeto*/
 	//~ resultados=crea_array_ent(NumPi); /*La creación aquí del array resultados petará posteriormente*/
 	//~ deltaPaso=0.001;
 	FILE *fui, *fout;
-	fui=fopen("Matriz_objeto2.txt", "r+");
+	fui=fopen("res/Matriz_objeto2.txt", "r+");
 	NRayos = mispar -> N;
 	deltaP=anchura/NumPi; /*Tamaño de cada detector*/
 
@@ -544,7 +566,7 @@ srand(time(NULL));
 Niter=(int)(dix*deltX/deltaPas);
 double deltadi = mispar -> deltadis;
 	double delta = mispar -> d;	
-fout=fopen("Rayos.txt", "w+");
+fout=fopen("res/Rayos.txt", "w+");
 printf("Contador = %d\n", cont);
 cosang=cos(bet);
 sinang=sin(bet);
@@ -654,4 +676,20 @@ fclose(fout);
 
 return NULL;
 
+}
+
+void saltar_com(FILE *fin) /* En archivo de texto salta a la siguiente línea tras \n*/
+{
+	char col;
+	while(fscanf(fin, "%c", &col))
+	{
+		if(col=='\n')
+		{
+			
+			break;
+		}
+		
+	}
+	
+	
 }
